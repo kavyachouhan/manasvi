@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Manasvi</title>
+
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'chat/styles.css' %}">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h1>Manasvi</h1>
+            <p class="quote">"Mental health is not a destination, but a process."</p>
+        </div>
+        <div class="chat-log" id="chat_log"></div>
+
+        <div class="input-container">
+            <input type="text" id="user_input" placeholder="Type your message...">
+            <button id="send_button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Select input box on page load
+            $('#user_input').focus();
+
+            function addFeedbackOptions() {
+                return '<div class="feedback-container">' +
+                    '<button class="feedback-btn" id="thumbs_up">👍</button>' +
+                    '<button class="feedback-btn" id="thumbs_down">👎</button>' +
+                    '</div>';
+            }
+
+            function handleFeedback() {
+                $('.feedback-btn').click(function() {
+                    const feedbackMessage = $(this).attr('id') === 'thumbs_up' ? 'Thanks for your positive feedback!' : 'Thanks for your feedback!';
+                    $(this).parent().after('<div class="feedback-message">' + feedbackMessage + '</div>');
+                    $(this).parent().remove();
+
+                    // Remove the feedback message after 2 seconds
+                    setTimeout(function() {
+                        $('.feedback-message').fadeOut(function() {
+                            $(this).remove();
+                        });
+                    }, 2000);
+                });
+            }
+
+            // Handle button click or 'Enter' key press
+            function sendMessage() {
+                const message = $('#user_input').val();
+                const name = 'User';
+
+                if (message.trim() !== '') {
+                    // Append user message
+                    $('#chat_log').append('<div class="user-message">' + message + '</div>');
+
+                    $.ajax({
+                        url: '/chatbot/',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ message, name }),
+                        success(data) {
+                            // Append bot response with feedback options
+                            $('#chat_log').append('<div class="bot-message">' + data.response + addFeedbackOptions() + '</div>');
+                            $('#user_input').val('');
+                            $('.chat-log').scrollTop($('.chat-log')[0].scrollHeight); // Scroll to bottom
+                            handleFeedback(); // Add feedback event listeners
+                        }
+                    });
+                }
+            }
+
+            $('#send_button').click(function() {
+                sendMessage();
+            });
+
+            $('#user_input').keypress(function(e) {
+                if (e.which == 13) { // Enter key pressed
+                    sendMessage();
+                }
+            });
+
+            // Automatically select input box on page load
+            $('#user_input').focus();
+        });
+    </script>
+</body>
+</html>
