@@ -1,0 +1,1 @@
+web: gunicorn manasvi_chatbot.wsgi
