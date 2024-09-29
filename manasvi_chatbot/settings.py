@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-o^s1tj#&54%h#_&3ybb32o6_wz&3#yd_axtz=i1457_yelnm2y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -73,6 +73,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'manasvi_chatbot.wsgi.application'
 
+IS_RENDER = os.environ.get('RENDER')
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -82,6 +83,9 @@ DATABASES = {
         default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
     )
 }
+
+if IS_RENDER:
+    DATABASES['default'] = dj_database_url.config(default='sqlite:///db.sqlite3')
 
 
 # Password validation
@@ -118,7 +122,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
