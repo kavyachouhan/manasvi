@@ -20,29 +20,22 @@ def chatbot_response(request):
         data = json.loads(request.body)
         user_input = data.get("message", "").lower().strip()
 
-        # Start a new session if it's a fresh request
-        if 'new_session' in data and data['new_session']:
-            request.session.flush()  # Clear any existing session data
-            request.session['step'] = 1  # Initialize step
-            request.session['name'] = ""  # Clear name
-
-        # Get the current conversation step from the session
+        # Use session to track the step and name
         step = request.session.get('step', 1)
-        name = request.session.get('name', "")
+        name = request.session.get('name', "User")  # Get name from session or default to "User"
 
         # Conversation flow based on state
         if step == 1:
-            # Check if the user started with a greeting
             if any(greeting in user_input for greeting in GREETINGS):
                 response_text = "Hello! I'm Manasvi, your mental health companion. What's your name?"
-                request.session['step'] = 2  # Update step
+                request.session['step'] = 2
             else:
-                response_text = "I'm here to help. You can start by saying 'Hi' or 'Hello'."
+                response_text = "I'm here to help. You can start by saying 'Hi' or 'Hello.'"
         
         elif step == 2:
             if user_input:
                 request.session['name'] = user_input
-                response_text = f"Nice to meet you, {name}! How are you feeling today?"
+                response_text = f"Nice to meet you, {request.session['name']}! How are you feeling today?"  # Use the name stored in session
                 request.session['step'] = 3
             else:
                 response_text = "I didn't catch that. Could you please tell me your name?"
@@ -52,12 +45,11 @@ def chatbot_response(request):
                 response_text = "I'm sorry you're feeling down. Do you want to talk about what's been troubling you?"
                 request.session['step'] = 4
             elif "happy" in user_input or "good" in user_input:
-                response_text = f"That's great to hear, {name}! What made you feel this way?"
+                response_text = f"That's great to hear, {request.session['name']}! What made you feel this way?"  # Use the name stored in session
                 request.session['step'] = 4
             else:
-                response_text = f"Can you tell me more about how you're feeling, {name}?"
+                response_text = f"Can you tell me more about how you're feeling, {request.session['name']}?"
                 request.session['step'] = 4
-
         elif step == 4:
             response_text = "Would you like to discuss more about this?"
             request.session['step'] = 5
