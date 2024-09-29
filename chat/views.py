@@ -18,60 +18,57 @@ GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon"
 def chatbot_response(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        user_id = request.session.session_key
         user_input = data.get("message", "").lower().strip()
-        user_name = data.get("name", "User")
 
-        # Track conversation state
-        user_id = request.session.session_key  # Session key to identify users
-        if user_id not in CONVERSATION_STATE:
-            CONVERSATION_STATE[user_id] = {"step": 1, "name": ""}
+        # Start a new session if it's a fresh request
+        if 'new_session' in data and data['new_session']:
+            request.session.flush()  # Clear any existing session data
+            request.session['step'] = 1  # Initialize step
+            request.session['name'] = ""  # Clear name
 
-        state = CONVERSATION_STATE[user_id]
+        # Get the current conversation step from the session
+        step = request.session.get('step', 1)
+        name = request.session.get('name', "")
 
         # Conversation flow based on state
-        if state["step"] == 1:
+        if step == 1:
             # Check if the user started with a greeting
             if any(greeting in user_input for greeting in GREETINGS):
                 response_text = "Hello! I'm Manasvi, your mental health companion. What's your name?"
-                state["step"] = 2
+                request.session['step'] = 2  # Update step
             else:
                 response_text = "I'm here to help. You can start by saying 'Hi' or 'Hello'."
         
-        elif state["step"] == 2:
-            # Expecting a name
+        elif step == 2:
             if user_input:
-                state["name"] = user_input
-                response_text = f"Nice to meet you, {state['name']}! How are you feeling today?"
-                state["step"] = 3
+                request.session['name'] = user_input
+                response_text = f"Nice to meet you, {name}! How are you feeling today?"
+                request.session['step'] = 3
             else:
                 response_text = "I didn't catch that. Could you please tell me your name?"
 
-        elif state["step"] == 3:
-            # Expecting user to talk about their feelings
+        elif step == 3:
             if "sad" in user_input or "depressed" in user_input or "bad" in user_input:
                 response_text = "I'm sorry you're feeling down. Do you want to talk about what's been troubling you?"
-                state["step"] = 4
+                request.session['step'] = 4
             elif "happy" in user_input or "good" in user_input:
-                response_text = f"That's great to hear, {state['name']}! What made you feel this way?"
-                state["step"] = 4
+                response_text = f"That's great to hear, {name}! What made you feel this way?"
+                request.session['step'] = 4
             else:
-                response_text = f"Can you tell me more about how you're feeling, {state['name']}?"
-                state["step"] = 4
+                response_text = f"Can you tell me more about how you're feeling, {name}?"
+                request.session['step'] = 4
 
-        elif state["step"] == 4:
-            # Expecting the user to continue discussing feelings
+        elif step == 4:
             response_text = "Would you like to discuss more about this?"
-            state["step"] = 5
+            request.session['step'] = 5
 
-        elif state["step"] == 5:
-            # Expecting the user to decide if they want to continue
+        elif step == 5:
             if "yes" in user_input.lower() or "sure" in user_input.lower():
                 response_text = "I'm here to listen. Please go ahead."
-                state["step"] = 4  # Keep the conversation going
+                request.session['step'] = 4  # Keep the conversation going
             elif "no" in user_input.lower():
                 response_text = "Alright, I'm glad we had this chat. Feel free to reach out anytime!"
-                state["step"] = 1  # Reset for a new conversation
+                request.session['step'] = 1  # Reset for a new conversation
             else:
                 response_text = "I didn't quite understand. Would you like to discuss more about this? Please say 'yes' or 'no'."
 

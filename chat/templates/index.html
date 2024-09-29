@@ -29,6 +29,17 @@
             // Select input box on page load
             $('#user_input').focus();
 
+            // Start a new session
+            $.ajax({
+                url: '/chatbot/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ message: 'start', new_session: true }),
+                success(data) {
+                    $('#chat_log').append('<div class="bot-message">' + data.response + '</div>');
+                }
+            });
+
             function addFeedbackOptions() {
                 return '<div class="feedback-container">' +
                     '<button class="feedback-btn" id="thumbs_up">👍</button>' +
