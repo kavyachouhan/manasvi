@@ -29,6 +29,11 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+SESSION_COOKIE_NAME = 'manasvi_session'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 1209600  # Two weeks in seconds
+
+
 
 # Application definition
 

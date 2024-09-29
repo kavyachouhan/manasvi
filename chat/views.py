@@ -2,6 +2,7 @@ import spacy
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
+from django.contrib.sessions.models import Session
 import json
 from .models import UserFeedback
 
@@ -17,6 +18,7 @@ GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon"
 def chatbot_response(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        user_id = request.session.session_key
         user_input = data.get("message", "").lower().strip()
         user_name = data.get("name", "User")
 
