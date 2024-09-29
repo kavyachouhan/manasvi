@@ -1,4 +1,5 @@
 import spacy
+from textblob import TextBlob
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
@@ -7,7 +8,7 @@ import json
 from .models import UserFeedback
 
 # Load the spaCy model
-nlp = spacy.load("en_core_web_md")
+nlp = spacy.load("en_core_web_trf")
 
 # State for conversation flow tracking
 CONVERSATION_STATE = {}
@@ -18,49 +19,58 @@ GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon"
 def chatbot_response(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        user_id = request.session.session_key
         user_input = data.get("message", "").lower().strip()
+        user_name = request.session.get('name', 'User')  # Retrieve name from session
+        
+        # Analyze sentiment of the user's input
+        sentiment_score = analyze_sentiment(user_input)
 
-        # Use session to track the step and name
-        step = request.session.get('step', 1)
-        name = request.session.get('name', "User")  # Get name from session or default to "User"
+        # Track conversation state
+        if user_id not in CONVERSATION_STATE:
+            CONVERSATION_STATE[user_id] = {"step": 1, "name": ""}
 
-        # Conversation flow based on state
-        if step == 1:
+        state = CONVERSATION_STATE[user_id]
+
+        # Response logic based on sentiment score
+        if state["step"] == 1:
             if any(greeting in user_input for greeting in GREETINGS):
                 response_text = "Hello! I'm Manasvi, your mental health companion. What's your name?"
-                request.session['step'] = 2
+                state["step"] = 2
             else:
-                response_text = "I'm here to help. You can start by saying 'Hi' or 'Hello.'"
+                response_text = "I'm here to help. You can start by saying 'Hi' or 'Hello'."
         
-        elif step == 2:
+        elif state["step"] == 2:
             if user_input:
-                request.session['name'] = user_input
-                response_text = f"Nice to meet you, {request.session['name']}! How are you feeling today?"  # Use the name stored in session
-                request.session['step'] = 3
+                state["name"] = user_input
+                response_text = f"Nice to meet you, {state['name']}! How are you feeling today?"
+                state["step"] = 3
             else:
                 response_text = "I didn't catch that. Could you please tell me your name?"
 
-        elif step == 3:
-            if "sad" in user_input or "depressed" in user_input or "bad" in user_input:
-                response_text = "I'm sorry you're feeling down. Do you want to talk about what's been troubling you?"
-                request.session['step'] = 4
-            elif "happy" in user_input or "good" in user_input:
-                response_text = f"That's great to hear, {request.session['name']}! What made you feel this way?"  # Use the name stored in session
-                request.session['step'] = 4
-            else:
-                response_text = f"Can you tell me more about how you're feeling, {request.session['name']}?"
-                request.session['step'] = 4
-        elif step == 4:
-            response_text = "Would you like to discuss more about this?"
-            request.session['step'] = 5
+        elif state["step"] == 3:
+            # Check sentiment for more nuanced responses
+            if sentiment_score < -0.2:  # Negative sentiment
+                response_text = "I'm sorry to hear that you're feeling down. Would you like to talk about it?"
+                state["step"] = 4
+            elif sentiment_score > 0.2:  # Positive sentiment
+                response_text = f"That's great to hear, {state['name']}! What made you feel this way?"
+                state["step"] = 4
+            else:  # Neutral sentiment
+                response_text = f"Can you tell me more about how you're feeling, {state['name']}?"
+                state["step"] = 4
 
-        elif step == 5:
-            if "yes" in user_input.lower() or "sure" in user_input.lower():
+        elif state["step"] == 4:
+            response_text = "Would you like to discuss more about this?"
+            state["step"] = 5
+
+        elif state["step"] == 5:
+            if "yes" in user_input.lower():
                 response_text = "I'm here to listen. Please go ahead."
-                request.session['step'] = 4  # Keep the conversation going
+                state["step"] = 4  # Keep the conversation going
             elif "no" in user_input.lower():
                 response_text = "Alright, I'm glad we had this chat. Feel free to reach out anytime!"
-                request.session['step'] = 1  # Reset for a new conversation
+                state["step"] = 1  # Reset for a new conversation
             else:
                 response_text = "I didn't quite understand. Would you like to discuss more about this? Please say 'yes' or 'no'."
 
@@ -68,6 +78,10 @@ def chatbot_response(request):
 
     return JsonResponse({"error": "Invalid request"}, status=400)
 
+def analyze_sentiment(text):
+    analysis = TextBlob(text)
+    # Get the polarity score
+    return analysis.sentiment.polarity
 
 @csrf_exempt
 def collect_feedback(request):
