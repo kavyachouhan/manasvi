@@ -1,1 +1,1 @@
-web: gunicorn manasvi_chatbot.wsgi
+web: gunicorn --workers=2 --threads=2 yourprojectname.wsgi:application
