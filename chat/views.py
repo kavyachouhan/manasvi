@@ -6,6 +6,8 @@ from django.shortcuts import render
 from django.contrib.sessions.models import Session
 import json
 from .models import UserFeedback
+from django.db import connection
+from django.core.cache import cache
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_trf")
@@ -101,7 +103,17 @@ def collect_feedback(request):
             feedback_context=feedback_context
         )
 
+        connection.close() 
+
         return JsonResponse({"message": "Feedback saved successfully!"})
 
 def index(request):
     return render(request, 'index.html')
+
+
+def my_view(request):
+    data = cache.get('my_key')
+    if not data:
+        data = UserFeedback.objects.all()  # Fetch data if not cached
+        cache.set('my_key', data, timeout=60*15)  # Cache data for 15 minutes
+    return render(request, 'your_template.html', {'data': data})

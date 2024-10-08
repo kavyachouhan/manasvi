@@ -1,1 +1,1 @@
-web: waitress-serve --port=8000 manasvi_chatbot.wsgi:application
+web: gunicorn --workers=2 --threads=2 .wsgi:application
