@@ -10,7 +10,7 @@ from django.db import connection
 from django.core.cache import cache
 
 # Load the spaCy model
-nlp = spacy.load("en_core_web_trf")
+nlp = spacy.load("en_core_web_sm")
 
 # State for conversation flow tracking
 CONVERSATION_STATE = {}
