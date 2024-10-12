@@ -29,9 +29,10 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-SESSION_COOKIE_NAME = 'manasvi_session'
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 1209600  # Two weeks in seconds
+# Session expiry after 15 minutes of inactivity
+SESSION_COOKIE_AGE = 900  # 15 minutes = 900 seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expire when the browser is closed
+SESSION_SAVE_EVERY_REQUEST = True  # Save the session with every request
 
 
 

@@ -17,11 +17,20 @@ CONVERSATION_STATE = {}
 
 GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]
 
+def index(request):
+    request.session.flush()  # Clear session on page load
+    request.session.create()  # Create a new session
+    return render(request, 'index.html')
+
 @csrf_exempt
 def chatbot_response(request):
+    # If there is no session or it's the first load, create a new session
+    if not request.session.session_key:
+        request.session.create()  # Create a new session
+
     if request.method == "POST":
         data = json.loads(request.body)
-        user_id = request.session.session_key
+        user_id = request.session.session_key  # Assign a unique session ID per device/browser
         user_input = data.get("message", "").lower().strip()
         user_name = request.session.get('name', 'User')  # Retrieve name from session
         
@@ -106,10 +115,6 @@ def collect_feedback(request):
         connection.close() 
 
         return JsonResponse({"message": "Feedback saved successfully!"})
-
-def index(request):
-    return render(request, 'index.html')
-
 
 def my_view(request):
     data = cache.get('my_key')
