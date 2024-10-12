@@ -8,9 +8,13 @@ import json
 from .models import UserFeedback
 from django.db import connection
 from django.core.cache import cache
+from decouple import config
+import google.generativeai as genai
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
+
+genai.configure(api_key=config("API_KEY"))
 
 # State for conversation flow tracking
 CONVERSATION_STATE = {}
@@ -84,10 +88,26 @@ def chatbot_response(request):
                 state["step"] = 1  # Reset for a new conversation
             else:
                 response_text = "I didn't quite understand. Would you like to discuss more about this? Please say 'yes' or 'no'."
+            
+         # Detect greeting and handle flow with OpenAI response if not a greeting
+        if any(greeting in user_input for greeting in GREETINGS):
+            response_text = "Hello! I'm Manasvi, your mental health companion. What's your name?"
+        else:
+            # Call OpenAI API for general queries
+            response_text = get_genai_response(user_input)
 
         return JsonResponse({"response": response_text})
 
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+def get_genai_response(user_input):
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(user_input)
+        return response.text
+    except Exception as e:
+        print(f"Error calling GenAI: {e}")
+        return "Sorry, I am having trouble processing your request at the moment."
 
 def analyze_sentiment(text):
     analysis = TextBlob(text)

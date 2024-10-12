@@ -1,0 +1,21 @@
+# Python compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environment folder
+venv/
+env/
+
+# Local settings
+*.sqlite3
+
+# Static files and media files
+/static/
+/media/
+
+# IDE-specific files (optional)
+.vscode/
+.idea/
+
+# Environment variables file
+.env
