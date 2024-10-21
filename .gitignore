@@ -8,6 +8,7 @@ env/
 
 # Local settings
 *.sqlite3
+db.sqlite3
 
 # Static files and media files
 /static/
