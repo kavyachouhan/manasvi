@@ -172,14 +172,22 @@ def submit_feedback():
             'thumbDown': 1  # Negative feedback
         }
         
+        message_map = {
+            'thumbUp': 'Thank you for your positive feedback!',
+            'thumbDown': 'Thank you for your feedback. We will work on improving.'
+        }
+        
+        feedback_message = message_map.get(feedback_type, 'Thank you for your feedback!')
+        
         # Get the corresponding rating, default to 3 if not found
         rating = rating_map.get(feedback_type, 3)
         
-        # In Flask, you'll need to handle database operations differently
-        # This is a placeholder - replace with your actual database logic
         print(f"Feedback Received: Type {feedback_type}, Rating {rating}")
         
-        return jsonify({'status': 'success'})
+        return jsonify({
+            'status': 'success',
+            'message': feedback_message
+        })
     
     except json.JSONDecodeError:
         # Handle JSON parsing errors
