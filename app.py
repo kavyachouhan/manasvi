@@ -28,11 +28,6 @@ initial_empathy_responses = {
             "Feeling isolated is painful. Your courage in sharing this means so much.",
             "Loneliness doesn't define you. Would you like to explore how you're feeling?"
         ],
-        "anxiety": [
-            "Anxiety can make the world feel overwhelming. Your feelings are valid and important.",
-            "I hear the weight you're carrying. Let's take a moment to breathe together.",
-            "Anxiety doesn't have to control your story. Would you like to talk through what you're experiencing?"
-        ],
         "depressed": [
             "Depression can make everything feel colorless. Your pain is real, and you matter.",
             "Living with depression takes immense strength. I'm here, truly listening.",
@@ -43,15 +38,45 @@ initial_empathy_responses = {
             "I'm hearing that you're under a lot of pressure. Can you tell me more about what's going on?",
             "It sounds like you're carrying a heavy load. I'm here to listen and support you."
         ],
-        "heartbreak": [
-            "Heartbreak is one of the most painful experiences. Would you like to share what happened?",
-            "I'm so sorry you're going through this. Breakups can feel like an emotional earthquake.",
-            "Healing takes time, and your feelings are completely valid. Would you like to talk about it?"
+        "hello": [
+            "Hi there! I'm Manasvi, your mental health companion. How would you like me to call you?",
+            "Hey, I’m Manasvi. Before we begin, may I know your name?",
+            "Hello, I’m Manasvi. What should I call you?"
         ],
-        "angry": [
-            "Anger is a powerful emotion. Would you like to share what's making you feel this way?",
-            "It sounds like you're carrying a lot of frustration. I'm here to listen without judgment.",
-            "Your anger is valid. Can you tell me more about what's bringing up these feelings?"
+        "hi": [
+            "Hi there! I'm Manasvi, your mental health companion. How would you like me to call you?",
+            "Hey, I’m Manasvi. Before we begin, may I know your name?",
+            "Hello, I’m Manasvi. What should I call you?"
+        ],
+        "hey": [
+            "Hi there! I'm Manasvi, your mental health companion. How would you like me to call you?",
+            "Hey, I’m Manasvi. Before we begin, may I know your name?",
+            "Hello, I’m Manasvi. What should I call you?"
+        ],
+        "good morning": [
+            "Good morning! I’m Manasvi. Before we start, may I ask your name?",
+            "Good morning! I’m Manasvi. What's your name?",
+            "Good morning! I’m Manasvi. I would love to know your name."
+        ],
+        "good afternoon": [
+            "Good afternoon! I’m Manasvi. Before we start, may I ask your name?",
+            "Good afternoon! I’m Manasvi. May I know your name before we continue?",
+            "Good afternoon! I’m Manasvi. I would love to know your name."
+        ],
+        "good evening": [
+            "Good evening! I’m Manasvi. Before we start, may I ask your name?",
+            "Good evening! I’m Manasvi. Could you share your name with me?",
+            "Good evening! I’m Manasvi. I would love to know your name."
+        ],
+        "happy": [
+            "That’s wonderful to hear! What’s been making you feel so positive?",
+            "I’m really glad you’re feeling happy. Would you like to share what’s brightening your day?",
+            "It’s great that things are going well. Is there anything in particular that’s bringing you joy?"
+        ],
+        "bye": [
+            "Thank you for sharing with me today. Take care and be kind to yourself.",
+            "I’m glad we could talk. Wishing you well until next time.",
+            "You’re not alone, and I’ll be here if you’d like to connect again. Take care."
         ]
     }
 }
@@ -95,31 +120,9 @@ def chat():
         )
 
         chat = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            temperature=0.6,
+            model="gemini-2.0-flash-exp",
+            temperature=0.5,
             max_tokens=None,
-            system_instruction=f"""
-            You are Maanasvi, a compassionate mental health companion.
-
-            Emotional Support Principles:
-            - Prioritize emotional validation
-            - Create a safe, non-judgmental space
-            - Respond with deep empathy and understanding
-            - Focus on the human experience
-            - Offer gentle, supportive guidance
-
-            Communication Guidelines:
-            - Listen actively and reflect feelings
-            - Ask thoughtful, open-ended questions
-            - Avoid giving direct medical advice
-            - Maintain a warm, human-like tone
-            - Respect the user's emotional boundaries
-
-            Core Purpose:
-            To provide a supportive, understanding presence 
-            that helps users feel heard, validated, and 
-            less alone in their emotional journey.
-            """
         )
 
         qa = ConversationalRetrievalChain.from_llm(
