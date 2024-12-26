@@ -23,21 +23,6 @@ chat_history = []
 # Define rule-based responses
 initial_empathy_responses = {
     "keywords": {
-        "lonely": [
-            "I understand loneliness can feel like a heavy cloud. You're not alone, even if it feels that way right now.",
-            "Feeling isolated is painful. Your courage in sharing this means so much.",
-            "Loneliness doesn't define you. Would you like to explore how you're feeling?"
-        ],
-        "depressed": [
-            "Depression can make everything feel colorless. Your pain is real, and you matter.",
-            "Living with depression takes immense strength. I'm here, truly listening.",
-            "Some days are harder than others. Would you like to share what's been difficult?"
-        ],
-        "stressed": [
-            "Stress can be overwhelming. Would you like to explore what's causing you to feel this way?",
-            "I'm hearing that you're under a lot of pressure. Can you tell me more about what's going on?",
-            "It sounds like you're carrying a heavy load. I'm here to listen and support you."
-        ],
         "hello": [
             "Hi there! I'm Manasvi, your mental health companion. How would you like me to call you?",
             "Hey, I’m Manasvi. Before we begin, may I know your name?",
@@ -67,11 +52,6 @@ initial_empathy_responses = {
             "Good evening! I’m Manasvi. Before we start, may I ask your name?",
             "Good evening! I’m Manasvi. Could you share your name with me?",
             "Good evening! I’m Manasvi. I would love to know your name."
-        ],
-        "happy": [
-            "That’s wonderful to hear! What’s been making you feel so positive?",
-            "I’m really glad you’re feeling happy. Would you like to share what’s brightening your day?",
-            "It’s great that things are going well. Is there anything in particular that’s bringing you joy?"
         ],
         "bye": [
             "Thank you for sharing with me today. Take care and be kind to yourself.",
