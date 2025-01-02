@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_pinecone import PineconeVectorStore
 from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationSummaryMemory
 
 load_dotenv()
 warnings.filterwarnings("ignore")
@@ -109,7 +109,7 @@ def chat():
             llm=chat,
             chain_type="stuff",
             retriever=vectorstore.as_retriever(),
-            memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+            memory = ConversationSummaryMemory(llm=chat, memory_key="chat_history", return_messages=True)
         )
 
         res = qa({
