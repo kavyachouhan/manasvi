@@ -10,6 +10,10 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGener
 from langchain_pinecone import PineconeVectorStore
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationSummaryMemory
+import re
+import psycopg2
+from psycopg2.extras import DictCursor
+from datetime import datetime
 
 load_dotenv()
 warnings.filterwarnings("ignore")
@@ -19,6 +23,8 @@ CORS(app)
 
 # Global chat history to maintain conversation context
 chat_history = []
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # Define rule-based responses
 initial_empathy_responses = {
@@ -54,17 +60,27 @@ initial_empathy_responses = {
             "Good evening! I’m Manasvi. I would love to know your name."
         ],
         "bye": [
-            "Thank you for sharing with me today. Take care and be kind to yourself.",
+            "Goodbye! Take care.",
             "I’m glad we could talk. Wishing you well until next time.",
-            "You’re not alone, and I’ll be here if you’d like to connect again. Take care."
+            "See you soon! Stay well."
         ]
     }
 }
 
 def find_empathetic_response(message):
+    # Lowercase and strip leading/trailing spaces
+    message = message.lower().strip()
+    
     for category, keywords in initial_empathy_responses['keywords'].items():
-        if any(keyword in message.lower() for keyword in category.split(',')):
-            return random.choice(keywords)
+        category_words = category.split(',')
+
+        for word in category_words:
+            # Match only if the word appears at the start or as a standalone word
+            pattern = rf'^(?:{re.escape(word)}[\s\.,!?]*|.*\b{re.escape(word)}\b\s*[\.,!?]?$)'
+            
+            if re.search(pattern, message):
+                return random.choice(keywords)
+    
     return None
 
 @app.route('/')
@@ -77,12 +93,26 @@ def chat():
         # Parse incoming JSON data
         data = request.get_json()
         user_message = data.get('message', '')
+        ip_address = request.remote_addr
 
         # Check if the user's message matches a rule-based response
         matched_response = find_empathetic_response(user_message)
 
         # If a rule-based empathetic response is found, return it
         if matched_response:
+            try:
+                conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+                cur = conn.cursor()
+                cur.execute(
+                    'INSERT INTO chat_messages (ip_address, user_message, bot_response, timestamp) VALUES (%s, %s, %s, %s)',
+                    (ip_address, user_message, matched_response, datetime.now().isoformat())
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
+            except psycopg2.Error as e:
+                print("Failed to connect to PostgreSQL:", e)
+                return jsonify({'status': 'error', 'message': 'Database connection failed. Please try again later.'}), 500
             return jsonify({
                 'status': 'success',
                 'message': matched_response,
@@ -94,8 +124,9 @@ def chat():
             google_api_key=os.environ.get("GOOGLE_API_KEY"),
             model="models/embedding-001"
         )
+
         vectorstore = PineconeVectorStore(
-            index_name=os.environ["INDEX_NAME"],
+            index_name="pdf-vectorized",
             embedding=embeddings
         )
 
@@ -120,6 +151,16 @@ def chat():
         history = (user_message, res['answer'])
         chat_history.append(history)
 
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        cur = conn.cursor()
+        cur.execute(
+            'INSERT INTO chat_messages (ip_address, user_message, bot_response, timestamp) VALUES (%s, %s, %s, %s)',
+            (ip_address, user_message, res['answer'], datetime.now().isoformat())
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
         return jsonify({
             'status': 'success',
             'message': res['answer'],
@@ -127,11 +168,9 @@ def chat():
         })
     
     except Exception as ai_error:
-        # Compassionate Error Handling
+        print("Unable to connect", ai_error)
         error_responses = [
-            "Something feels a bit off right now. Your feelings are still important to me.",
             "I'm having trouble connecting at the moment. Would you like to try again?",
-            "Let's take a gentle pause. Would you like to reshare your thoughts?"
         ]
         
         return jsonify({
@@ -166,6 +205,16 @@ def submit_feedback():
         rating = rating_map.get(feedback_type, 3)
         
         print(f"Feedback Received: Type {feedback_type}, Rating {rating}")
+
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        cur = conn.cursor()
+        cur.execute(
+            'INSERT INTO feedback (feedback_type, rating, timestamp) VALUES (%s, %s, %s)',
+            (feedback_type, rating, datetime.now().isoformat())
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
         
         return jsonify({
             'status': 'success',
