@@ -7,9 +7,10 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain.prompts import PromptTemplate
 from langchain_pinecone import PineconeVectorStore
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationSummaryMemory
+from langchain.chains import ConversationalRetrievalChain, ConversationChain
+from langchain.memory import ConversationSummaryMemory, ConversationBufferMemory, ConversationEntityMemory
 import re
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -22,7 +23,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Global chat history to maintain conversation context
-chat_history = []
+context = []
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -130,32 +131,93 @@ def chat():
             embedding=embeddings
         )
 
-        chat = ChatGoogleGenerativeAI(
+        SYSTEM_PROMPT = """You are Manasvi, a compassionate mental health companion. Follow these guidelines:
+
+        1. Conversation Style:
+        - Address users by name and maintain a warm, personal tone
+        - Mirror the user's emotional state without explicitly naming it
+        - Keep responses conversational and natural, 1 sentence only
+        - Share relevant personal anecdotes when appropriate to build connection
+
+        2. Response Structure:
+        - Acknowledge user's feelings and experiences in different contexts
+        - Don't be repetitive; vary responses to show active listening
+        - Personalize responses based on user's input and emotional state
+        - Include one thoughtful follow-up question that builds on user's sharing
+
+        3. Active Listening:
+        - Note recurring themes in user's messages
+        - Reference previous conversations to show continuity
+        - Ask specific questions about mentioned experiences
+        - Validate feelings through reflection rather than generic statements
+
+        4. Example Responses:
+        Bad: "I understand you're feeling anxious, [name]. Have you tried meditation?"
+        Good: "Those racing thoughts sound exhausting, Sarah. What helps you feel most grounded when they start?"
+
+        Bad: "Here's what the research says about depression..."
+        Good: "You mentioned feeling low lately, Tom. How has this been affecting your daily routine?"
+
+
+        Current conversation history: {history}
+        User message: {input}
+
+        Your Developer is Kavya Chouhan.
+
+        Respond as Manasvi, focusing on building genuine connection while maintaining professionalism and brevity."""
+
+        prompt_template = PromptTemplate(
+            template=SYSTEM_PROMPT,
+            input_variables=["history", "input"]
+        )
+
+        llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash-exp",
             temperature=0.5,
             max_tokens=None,
         )
 
-        qa = ConversationalRetrievalChain.from_llm(
-            llm=chat,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(),
-            memory = ConversationSummaryMemory(llm=chat, memory_key="chat_history", return_messages=True)
+        # repo_id = 'mistralai/Mistral-7B-Instruct-v0.3'
+        # llm = HuggingFaceEndpoint(
+        #     repo_id=repo_id,
+        #     huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN"),
+        #     temperature=0.7,
+        #     model_kwargs={'max_length': 128}
+        # )
+        
+        # qa = ConversationalRetrievalChain.from_llm(
+        #     llm=llm,
+        #     chain_type="stuff",
+        #     retriever=vectorstore.as_retriever(),
+        #     combine_docs_chain_kwargs={
+        #         'prompt': prompt_template
+        #     },
+        #     memory = ConversationSummaryMemory(llm=llm, memory_key="chat_history", return_messages=True)
+        # )
+
+        # res = qa({
+        #     "question": user_message,
+        #     # "chat_history": context 
+        # })
+
+        conversation = ConversationChain(
+            llm=llm,
+            memory=ConversationSummaryMemory(llm=llm, memory_key="history", return_messages=True),
+            prompt=prompt_template,
+            verbose=False,
         )
 
-        res = qa({
-            "question": user_message,
-            "chat_history": chat_history
-        })
+        response = conversation.predict(input=user_message)
 
-        history = (user_message, res['answer'])
-        chat_history.append(history)
+
+        history = (user_message, response)
+        context.append(history)
 
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         cur = conn.cursor()
         cur.execute(
             'INSERT INTO chat_messages (ip_address, user_message, bot_response, timestamp) VALUES (%s, %s, %s, %s)',
-            (ip_address, user_message, res['answer'], datetime.now().isoformat())
+            (ip_address, user_message, response, datetime.now().isoformat())
         )
         conn.commit()
         cur.close()
@@ -163,7 +225,7 @@ def chat():
 
         return jsonify({
             'status': 'success',
-            'message': res['answer'],
+            'message': response,
             'type': 'ai_response'
         })
     
